@@ -1,0 +1,217 @@
+Session: 22T2
+Assignment: assn0  Submission ID: 5206032
+
+
+Your submission has been marked. + /usr/bin/less -m /import/ravel/4/z5206032/cs3151.assn0.mrk
+
+!!section banner
+#######  #####    ###    #####    ###    #####   #####
+#       #     #  #   #  #     #  #   #  #     # #     #
+#             # # #   # #       # #   #       #       #
+ #####   #####  #  #  # ######  #  #  #  #####   #####
+      # #       #   # # #     # #   # #       # #
+#     # #        #   #  #     #  #   #  #     # #
+ #####  #######   ###    #####    ###    #####  #######
+
+5206032	Nguyen, Dan                            	3785/5 COMPA1 MTRNAH
+
+Submissions:-
+
+S 0	Tue Jun 21 16:23:02 2022	5206032 all assn0 0:23
+S 1	Wed Jun 22 13:59:13 2022	5206032 all assn0 1:20
+
+Tue Jul 05 22:21:15 2022		## weill.orchestra.cse.unsw.EDU.AU ##
+!!section listing
+Autotesting on weill with /usr/bin/spin and /home/cs3151/bin/ispin
+Copying critical2.h and critical.h
+-rw-r--r-- z5206032/z5206032 1549 2022-06-22 13:59 algY.pml
+-rw-r--r-- z5206032/z5206032 302994 2022-06-22 13:59 algY.pdf
+
+===============================================================================
+-rw-r----- 1 cs3151 cs3151 1549 Jun 22 13:59 algY.pml
+===============================================================================
+
+     1	#define MutexDontCare
+     2	#include "critical2.h"
+     3	
+     4	// b[0] = P's intent to enter critical section.
+     5	// b[1] = Q's intent to enter critical section.
+     6	bit b[2]
+     7	
+     8	proctype P() {
+     9	    do
+    10	    :: true ->
+    11	        non_critical_section();
+    12	        b[0] = true;
+    13	        do
+    14	        :: b[1] == true ->
+    15	            b[0] = true;
+    16	            do
+    17	            :: b[0] != true ->
+    18	                waitP: skip
+    19	            :: else -> break
+    20	            od
+    21	            b[0] = true;
+    22	        :: else -> break
+    23	        od
+    24	        csP: critical_section();
+    25	        b[0] = false;
+    26	    od
+    27	}
+    28	
+    29	proctype Q() {
+    30	    do
+    31	    :: true ->
+    32	        non_critical_section();
+    33	        b[1] = true;
+    34	        do
+    35	        :: b[0] == true ->
+    36	            b[1] = false;
+    37	            do
+    38	            :: b[0] != false ->
+    39	                waitQ: skip
+    40	            :: else -> break
+    41	            od
+    42	            b[1] = true;
+    43	        :: else -> break
+    44	        od
+    45	        csQ: critical_section();
+    46	        b[1] = false;
+    47	    od
+    48	}
+    49	
+    50	init {
+    51	    run P();
+    52	    run Q();
+    53	}
+    54	
+    55	// Check mutual exclusion.
+    56	ltl mutexPQ { [] !(P@csP && Q@csQ) }
+    57	
+    58	// Check eventual entry.
+    59	ltl entryP { [] (P@waitP implies (<> P@csP)) }
+    60	ltl entryQ { [] (Q@waitQ implies (<> Q@csQ)) }
+    61	
+    62	// Check absence of deadlock.
+    63	ltl deadlock1 { <>[] !(P@waitP && Q@csQ) }
+    64	ltl deadlock2 { <>[] !(P@waitP && Q@waitQ) }
+    65	ltl deadlock3 { <>[] !(P@csP && Q@waitQ) }
+    66	ltl deadlock4 { <>[] !(P@csP && Q@csQ) }
+    67	
+    68	// Check absence of unnecessary delay.
+    69	ltl delayP { [] ((P@waitP && []!Q@csQ && b[0]) implies (<> P@csP)) }
+    70	ltl delayQ { [] ((Q@waitQ && []!P@csP && b[1]) implies (<> Q@csQ)) }
+
+Attempting to use /usr/bin/spin on your algY.pml.
+ltl mutexPQ: [] (! (((P@csP)) && ((Q@csQ))))
+ltl entryP: [] ((! ((P@waitP))) || (<> ((P@csP))))
+ltl entryQ: [] ((! ((Q@waitQ))) || (<> ((Q@csQ))))
+ltl deadlock1: <> ([] (! (((P@waitP)) && ((Q@csQ)))))
+ltl deadlock2: <> ([] (! (((P@waitP)) && ((Q@waitQ)))))
+ltl deadlock3: <> ([] (! (((P@csP)) && ((Q@waitQ)))))
+ltl deadlock4: <> ([] (! (((P@csP)) && ((Q@csQ)))))
+ltl delayP: [] ((! ((((P@waitP)) && ([] (! ((Q@csQ))))) && (b[0]))) || (<> ((P@csP))))
+ltl delayQ: [] ((! ((((Q@waitQ)) && ([] (! ((P@csP))))) && (b[1]))) || (<> ((Q@csQ))))
+  the model contains 9 never claims: delayQ, delayP, deadlock4, deadlock3, deadlock2, deadlock1, entryQ, entryP, mutexPQ
+  only one claim is used in a verification run
+  choose which one with ./pan -a -N name (defaults to -N mutexPQ)
+  or use e.g.: spin -search -ltl mutexPQ algY.pml
+Spin liked your algY.pml.
+Compiling /tmp/COMP3151.1772259.run/pan
+Compilation succeeded.
+
+!!section tests
+!!section assess
+
+=========================
+Comments for question 1
+-------------------------
+
+
+First, you seem to be misreading the output of spin. The message we've
+been seeing in the lectures
+
+  To replay the error-trail, goto Simulate/Replay and select "Run"
+
+is an ispin thing; when spin discovers an error trail, this
+information is a bit more buried, but it's there. For example, the
+following in the log from a run of deadlock3:
+
+  pan: ltl formula deadlock3
+  pan:1: acceptance cycle (at depth 58)
+  pan: wrote algY.pml.trail
+
+indicates that an error trail was found. Hence you seem to have missed
+that several of your properties do in fact fail.
+
+Second, when you check liveness properties, you generally want to
+enable fairness. Otherwise, you'll typically find uninteresting error
+trails where one process is simply never scheduled.
+
+Third, your waitp and waitq are at odd locations. The convention is to
+put it at the start of the preprotocol. (Though I understand some labels
+there might be useful for your encoding of deadlock freedom).
+
+Fourth, your waitp location is unreachable. This has a number of
+interesting consequences, chief among them being that your delayP and
+entryP properties are vacuous.
+
+Fifth, your formalisation of deadlock freedom doesn't quite work,
+though I understand what you're going for. First, you'd want to say e.g.:
+
+   ¬◇□(waitP ∧ csQ)
+
+Otherwise, you're saying that you'll reach a point after which P can
+never be at the await while Q is in the critical section, which is
+unrelated to deadlock freedom.
+
+The csQ and csP locations are irrelevant for deadlock freedom because
+the critical section is non-blocking. What you'd need to check is that
+if both processes are at the await, at least one of them can go
+forward.
+
+Sixth, your formulation of AuD still allows for some contention: the
+other process could still be in the pre-protocol despite not being in
+the critical section.
+
+=========================
+!!specialmark  (Question 1)                            	10/40
+
+=========================
+Comments for question 2
+-------------------------
+
+
+Transition diagrams look good.
+
+Your assertion network is indeed inductive and I can follow your
+proofs. But it's unfortunately not interference free, contrary to your
+claim that
+
+  "Trivially, there is no interference since p does not modify b[1]
+  and q does not modify b[0]."
+
+For example, the assertion at p7 states that b[0]=1 ∧ b[1]=0.  This
+assertion is falsifiable by q, by taking the transition from q2 to q3.
+
+
+
+=========================
+!!specialmark  (Question 2)                            	30/40
+
+=========================
+Comments for question 3
+-------------------------
+
+
+=========================
+!!specialmark  (Question 3)                            	20/20
+
+!!marktab	**  MARKER'S  ASSESSMENT  **
+
+
+!!latepen	** LATE PENALTY (1 DAY +20 HOURS LATE)	 -10%
+
+!!finalmark	**  FINAL  ASSIGNMENT  MARK:	50/100
+
+5206032	Nguyen, Dan                            	3785/5 COMPA1 MTRNAH
